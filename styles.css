@@ -1022,6 +1022,10 @@ button {
   margin-top: 60px;
 }
 
+.news-grid-single {
+  grid-template-columns: minmax(0, 760px);
+}
+
 .news-card {
   background: var(--white);
   display: block;

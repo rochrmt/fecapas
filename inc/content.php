@@ -5,6 +5,7 @@ declare(strict_types=1);
 const CONTENT_FILE = __DIR__ . '/../data/content.json';
 const AUTH_FILE = __DIR__ . '/../data/auth.json';
 const UPLOAD_DIRECTORY = __DIR__ . '/../uploads';
+const MAX_DYNAMIC_ITEMS = 20;
 
 function default_content(): array
 {
@@ -174,7 +175,43 @@ function load_content(): array
         return $defaults;
     }
 
-    return array_replace_recursive($defaults, $saved);
+    $content = array_replace_recursive($defaults, $saved);
+
+    foreach (['values', 'actions', 'news'] as $collection) {
+        if (isset($saved[$collection]) && is_array($saved[$collection])) {
+            $content[$collection] = array_values(array_filter($saved[$collection], 'is_array'));
+        }
+    }
+
+    return $content;
+}
+
+function new_action_content(): array
+{
+    return [
+        'title' => 'Nouvelle action',
+        'description' => 'Ajoutez une présentation courte de cette action.',
+        'image' => 'assets/images/intercession-paix.webp',
+        'image_alt' => '',
+        'detail_content' => 'Décrivez ici le contexte, les objectifs et les résultats attendus de cette action.',
+        'gallery' => [],
+    ];
+}
+
+function new_news_content(): array
+{
+    return [
+        'date' => date('Y-m-d'),
+        'date_label' => '',
+        'category' => 'Actualité',
+        'title' => 'Nouvelle actualité',
+        'summary' => 'Ajoutez un résumé de cette actualité.',
+        'image' => 'assets/images/anniversaire-fecapas.webp',
+        'image_alt' => '',
+        'url' => '',
+        'detail_content' => 'Décrivez ici cette actualité en détail.',
+        'gallery' => [],
+    ];
 }
 
 function save_content(array $content): void
@@ -215,6 +252,13 @@ function e(string $value): string
 function content_value(array $content, string $section, string $key): string
 {
     $value = $content[$section][$key] ?? '';
+
+    return is_scalar($value) ? (string) $value : '';
+}
+
+function item_value(array $item, string $key): string
+{
+    $value = $item[$key] ?? '';
 
     return is_scalar($value) ? (string) $value : '';
 }

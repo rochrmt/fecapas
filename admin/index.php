@@ -32,6 +32,7 @@ unset($_SESSION['admin_notice']);
 
 try {
     ensure_storage_directories();
+    initialize_default_admin();
 } catch (Throwable $exception) {
     $error = $exception->getMessage();
 }
@@ -45,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requestAction = clean_text($_POST['request_action'] ?? '', 40);
 
         if ($requestAction === 'setup' && !is_admin_configured()) {
+            $username = clean_text($_POST['username'] ?? '', 80);
             $password = clean_text($_POST['password'] ?? '', 500);
             $confirmation = clean_text($_POST['password_confirmation'] ?? '', 500);
 
@@ -52,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new InvalidArgumentException('Les deux mots de passe ne correspondent pas.');
             }
 
-            configure_admin_password($password);
-            authenticate_admin($password);
+            save_admin_credentials($username, $password);
+            authenticate_admin($username, $password);
             $_SESSION['admin_notice'] = 'L’espace administrateur est prêt.';
             redirect_to_admin();
         }
@@ -65,7 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Trop de tentatives. Patientez quelques instants.');
             }
 
-            if (!authenticate_admin(clean_text($_POST['password'] ?? '', 500))) {
+            if (!authenticate_admin(
+                clean_text($_POST['username'] ?? '', 80),
+                clean_text($_POST['password'] ?? '', 500),
+            )) {
                 $attempts = (int) ($_SESSION['login_attempts'] ?? 0) + 1;
                 $_SESSION['login_attempts'] = $attempts;
 
@@ -74,7 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['login_attempts'] = 0;
                 }
 
-                throw new InvalidArgumentException('Mot de passe incorrect.');
+                throw new InvalidArgumentException('Identifiants incorrects.');
+            }
+
+            if (admin_requires_credential_change()) {
+                $_SESSION['admin_notice'] = 'Changez vos identifiants initiaux avant de modifier le site.';
+                redirect_to_admin('security');
             }
 
             redirect_to_admin();
@@ -90,21 +100,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('Vous devez vous reconnecter.');
         }
 
-        if ($requestAction === 'change_password') {
+        if (
+            admin_requires_credential_change()
+            && !in_array($requestAction, ['change_credentials', 'logout'], true)
+        ) {
+            throw new RuntimeException('Changez vos identifiants initiaux avant de modifier le site.');
+        }
+
+        if ($requestAction === 'change_credentials') {
+            $newUsername = clean_text($_POST['new_username'] ?? '', 80);
             $currentPassword = clean_text($_POST['current_password'] ?? '', 500);
             $newPassword = clean_text($_POST['new_password'] ?? '', 500);
             $confirmation = clean_text($_POST['new_password_confirmation'] ?? '', 500);
 
-            if (!authenticate_admin($currentPassword)) {
+            if (!authenticate_admin(admin_username(), $currentPassword)) {
                 throw new InvalidArgumentException('Le mot de passe actuel est incorrect.');
             }
 
-            if ($newPassword !== $confirmation) {
+            if ($newPassword !== '' && $newPassword !== $confirmation) {
                 throw new InvalidArgumentException('Les deux nouveaux mots de passe ne correspondent pas.');
             }
 
-            configure_admin_password($newPassword);
-            $_SESSION['admin_notice'] = 'Le mot de passe a été modifié.';
+            if (admin_requires_credential_change() && $newPassword === '') {
+                throw new InvalidArgumentException('Choisissez un nouveau mot de passe pour sécuriser le compte.');
+            }
+
+            save_admin_credentials($newUsername, $newPassword === '' ? null : $newPassword);
+            $_SESSION['admin_username'] = $newUsername;
+            $_SESSION['admin_notice'] = 'Les identifiants ont été modifiés.';
             redirect_to_admin('security');
         }
 
@@ -190,25 +213,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                     $postedActions = $_POST['actions'] ?? [];
                     $postedActions = is_array($postedActions) ? $postedActions : [];
+                    $requestedRemoval = filter_var($_POST['remove_item'] ?? null, FILTER_VALIDATE_INT);
+                    $removeIndex = is_int($requestedRemoval) && count($content['actions']) > 1
+                        ? $requestedRemoval
+                        : null;
+                    $updatedActions = [];
                     foreach ($content['actions'] as $index => $action) {
+                        if ($index === $removeIndex) {
+                            continue;
+                        }
+
                         $posted = $postedActions[$index] ?? [];
                         $posted = is_array($posted) ? $posted : [];
-                        $content['actions'][$index]['title'] = clean_text($posted['title'] ?? '');
-                        $content['actions'][$index]['description'] = clean_text($posted['description'] ?? '');
-                        $content['actions'][$index]['image_alt'] = clean_text($posted['image_alt'] ?? '');
-                        $content['actions'][$index]['detail_content'] = clean_text(
+                        $action['title'] = clean_text($posted['title'] ?? '');
+                        $action['description'] = clean_text($posted['description'] ?? '');
+                        $action['image_alt'] = clean_text($posted['image_alt'] ?? '');
+                        $action['detail_content'] = clean_text(
                             $posted['detail_content'] ?? '',
                             12000,
                         );
-                        $content['actions'][$index]['image'] = process_image_upload(
+                        $action['image'] = process_image_upload(
                             'action_image_' . $index,
-                            field_value($content['actions'][$index], 'image'),
+                            field_value($action, 'image'),
                         );
-                        $content['actions'][$index]['gallery'] = process_gallery_uploads(
+                        $action['gallery'] = process_gallery_uploads(
                             'action_gallery_' . $index,
-                            $content['actions'][$index]['gallery'] ?? [],
+                            $action['gallery'] ?? [],
                             $posted['gallery_remove'] ?? [],
                         );
+                        $updatedActions[] = $action;
+                    }
+                    $content['actions'] = $updatedActions;
+
+                    if (isset($_POST['add_item'])) {
+                        if (count($content['actions']) >= MAX_DYNAMIC_ITEMS) {
+                            throw new InvalidArgumentException('Vous pouvez publier au maximum 20 actions.');
+                        }
+
+                        $content['actions'][] = new_action_content();
                     }
                     break;
 
@@ -232,29 +274,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                     $postedNews = $_POST['news'] ?? [];
                     $postedNews = is_array($postedNews) ? $postedNews : [];
+                    $requestedRemoval = filter_var($_POST['remove_item'] ?? null, FILTER_VALIDATE_INT);
+                    $removeIndex = is_int($requestedRemoval) && count($content['news']) > 1
+                        ? $requestedRemoval
+                        : null;
+                    $updatedNews = [];
                     foreach ($content['news'] as $index => $item) {
+                        if ($index === $removeIndex) {
+                            continue;
+                        }
+
                         $posted = $postedNews[$index] ?? [];
                         $posted = is_array($posted) ? $posted : [];
-                        $content['news'][$index]['date'] = clean_text($posted['date'] ?? '', 20);
-                        $content['news'][$index]['date_label'] = clean_text($posted['date_label'] ?? '', 80);
-                        $content['news'][$index]['category'] = clean_text($posted['category'] ?? '', 80);
-                        $content['news'][$index]['title'] = clean_text($posted['title'] ?? '');
-                        $content['news'][$index]['summary'] = clean_text($posted['summary'] ?? '', 500);
-                        $content['news'][$index]['image_alt'] = clean_text($posted['image_alt'] ?? '');
-                        $content['news'][$index]['url'] = clean_url($posted['url'] ?? '');
-                        $content['news'][$index]['detail_content'] = clean_text(
+                        $item['date'] = clean_text($posted['date'] ?? '', 20);
+                        $item['date_label'] = clean_text($posted['date_label'] ?? '', 80);
+                        $item['category'] = clean_text($posted['category'] ?? '', 80);
+                        $item['title'] = clean_text($posted['title'] ?? '');
+                        $item['summary'] = clean_text($posted['summary'] ?? '', 500);
+                        $item['image_alt'] = clean_text($posted['image_alt'] ?? '');
+                        $item['url'] = clean_url($posted['url'] ?? '');
+                        $item['detail_content'] = clean_text(
                             $posted['detail_content'] ?? '',
                             12000,
                         );
-                        $content['news'][$index]['image'] = process_image_upload(
+                        $item['image'] = process_image_upload(
                             'news_image_' . $index,
-                            field_value($content['news'][$index], 'image'),
+                            field_value($item, 'image'),
                         );
-                        $content['news'][$index]['gallery'] = process_gallery_uploads(
+                        $item['gallery'] = process_gallery_uploads(
                             'news_gallery_' . $index,
-                            $content['news'][$index]['gallery'] ?? [],
+                            $item['gallery'] ?? [],
                             $posted['gallery_remove'] ?? [],
                         );
+                        $updatedNews[] = $item;
+                    }
+                    $content['news'] = $updatedNews;
+
+                    if (isset($_POST['add_item'])) {
+                        if (count($content['news']) >= MAX_DYNAMIC_ITEMS) {
+                            throw new InvalidArgumentException('Vous pouvez publier au maximum 20 actualités.');
+                        }
+
+                        $content['news'][] = new_news_content();
                     }
                     break;
 
@@ -340,6 +401,10 @@ $join = $content['join'];
                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>" />
                 <input type="hidden" name="request_action" value="setup" />
                 <label>
+                  Nom d’utilisateur
+                  <input name="username" value="<?= e(INITIAL_ADMIN_USERNAME) ?>" required autocomplete="username" />
+                </label>
+                <label>
                   Mot de passe
                   <input type="password" name="password" minlength="10" required autocomplete="new-password" />
                 </label>
@@ -363,8 +428,18 @@ $join = $content['join'];
                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>" />
                 <input type="hidden" name="request_action" value="login" />
                 <label>
+                  Nom d’utilisateur
+                  <input
+                    name="username"
+                    value="<?= e(admin_username()) ?>"
+                    required
+                    autocomplete="username"
+                    autofocus
+                  />
+                </label>
+                <label>
                   Mot de passe
-                  <input type="password" name="password" required autocomplete="current-password" autofocus />
+                  <input type="password" name="password" required autocomplete="current-password" />
                 </label>
                 <button class="admin-button" type="submit">Se connecter</button>
               </form>
@@ -381,14 +456,16 @@ $join = $content['join'];
           <span><strong>FECAPAS</strong><small>Administration</small></span>
         </a>
         <nav aria-label="Sections à modifier">
-          <a href="#identity">Identité</a>
-          <a href="#hero">Accueil</a>
-          <a href="#mission">Mission</a>
-          <a href="#values">Valeurs</a>
-          <a href="#actions">Actions</a>
-          <a href="#quote">Message</a>
-          <a href="#news">Actualités</a>
-          <a href="#join">Appel à l’action</a>
+          <?php if (!admin_requires_credential_change()): ?>
+            <a href="#identity">Identité</a>
+            <a href="#hero">Accueil</a>
+            <a href="#mission">Mission</a>
+            <a href="#values">Valeurs</a>
+            <a href="#actions">Actions</a>
+            <a href="#quote">Message</a>
+            <a href="#news">Actualités</a>
+            <a href="#join">Appel à l’action</a>
+          <?php endif; ?>
           <a href="#security">Sécurité</a>
         </nav>
         <form method="post" class="logout-form">
@@ -414,7 +491,8 @@ $join = $content['join'];
           <div class="alert alert-error"><?= e($error) ?></div>
         <?php endif; ?>
 
-        <section class="editor-card" id="identity">
+        <?php if (!admin_requires_credential_change()): ?>
+          <section class="editor-card" id="identity">
           <div class="editor-heading">
             <span>01</span>
             <div><p>Paramètres généraux</p><h2>Identité du site</h2></div>
@@ -572,6 +650,15 @@ $join = $content['join'];
               <?php foreach ($actions as $index => $action): ?>
                 <fieldset>
                   <legend>Action <?= $index + 1 ?></legend>
+                  <?php if (count($actions) > 1): ?>
+                    <button
+                      class="remove-item-button"
+                      type="submit"
+                      name="remove_item"
+                      value="<?= $index ?>"
+                      formnovalidate
+                    >Supprimer</button>
+                  <?php endif; ?>
                   <label>Titre<input name="actions[<?= $index ?>][title]" value="<?= e(field_value($action, 'title')) ?>" /></label>
                   <label>Description<textarea name="actions[<?= $index ?>][description]" rows="4"><?= e(field_value($action, 'description')) ?></textarea></label>
                   <label>Contenu détaillé<textarea name="actions[<?= $index ?>][detail_content]" rows="8"><?= e(field_value($action, 'detail_content')) ?></textarea></label>
@@ -609,7 +696,12 @@ $join = $content['join'];
                 </fieldset>
               <?php endforeach; ?>
             </div>
-            <button class="save-button" type="submit">Enregistrer les actions</button>
+            <div class="editor-form-actions">
+              <button class="add-item-button" type="submit" name="add_item" value="1" formnovalidate>
+                + Ajouter une action
+              </button>
+              <button class="save-button" type="submit">Enregistrer les actions</button>
+            </div>
           </form>
         </section>
 
@@ -658,6 +750,15 @@ $join = $content['join'];
               <?php foreach ($news as $index => $item): ?>
                 <fieldset>
                   <legend>Actualité <?= $index + 1 ?></legend>
+                  <?php if (count($news) > 1): ?>
+                    <button
+                      class="remove-item-button"
+                      type="submit"
+                      name="remove_item"
+                      value="<?= $index ?>"
+                      formnovalidate
+                    >Supprimer</button>
+                  <?php endif; ?>
                   <div class="field-grid">
                     <label>Date technique<input type="date" name="news[<?= $index ?>][date]" value="<?= e(field_value($item, 'date')) ?>" /></label>
                     <label>Date affichée<input name="news[<?= $index ?>][date_label]" value="<?= e(field_value($item, 'date_label')) ?>" /></label>
@@ -701,11 +802,16 @@ $join = $content['join'];
                 </fieldset>
               <?php endforeach; ?>
             </div>
-            <button class="save-button" type="submit">Enregistrer les actualités</button>
+            <div class="editor-form-actions">
+              <button class="add-item-button" type="submit" name="add_item" value="1" formnovalidate>
+                + Ajouter une actualité
+              </button>
+              <button class="save-button" type="submit">Enregistrer les actualités</button>
+            </div>
           </form>
         </section>
 
-        <section class="editor-card" id="join">
+          <section class="editor-card" id="join">
           <div class="editor-heading">
             <span>08</span>
             <div><p>Dernier bloc</p><h2>Appel à l’action</h2></div>
@@ -723,7 +829,8 @@ $join = $content['join'];
             </div>
             <button class="save-button" type="submit">Enregistrer l’appel à l’action</button>
           </form>
-        </section>
+          </section>
+        <?php endif; ?>
 
         <section class="editor-card" id="security">
           <div class="editor-heading">
@@ -732,13 +839,40 @@ $join = $content['join'];
           </div>
           <form method="post">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>" />
-            <input type="hidden" name="request_action" value="change_password" />
+            <input type="hidden" name="request_action" value="change_credentials" />
             <div class="field-grid">
+              <label class="field-full">
+                Nom d’utilisateur
+                <input name="new_username" value="<?= e(admin_username()) ?>" required autocomplete="username" />
+              </label>
               <label class="field-full">Mot de passe actuel<input type="password" name="current_password" required autocomplete="current-password" /></label>
-              <label>Nouveau mot de passe<input type="password" name="new_password" minlength="10" required autocomplete="new-password" /></label>
-              <label>Confirmer le mot de passe<input type="password" name="new_password_confirmation" minlength="10" required autocomplete="new-password" /></label>
+              <label>
+                Nouveau mot de passe
+                <input
+                  type="password"
+                  name="new_password"
+                  minlength="10"
+                  <?= admin_requires_credential_change() ? 'required' : '' ?>
+                  autocomplete="new-password"
+                />
+              </label>
+              <label>
+                Confirmer le mot de passe
+                <input
+                  type="password"
+                  name="new_password_confirmation"
+                  minlength="10"
+                  <?= admin_requires_credential_change() ? 'required' : '' ?>
+                  autocomplete="new-password"
+                />
+              </label>
             </div>
-            <button class="save-button" type="submit">Modifier le mot de passe</button>
+            <p class="security-help">
+              <?= admin_requires_credential_change()
+                ? 'Choisissez un nouveau mot de passe avant d’accéder aux outils de publication.'
+                : 'Laissez les champs du nouveau mot de passe vides pour modifier uniquement le nom d’utilisateur.' ?>
+            </p>
+            <button class="save-button" type="submit">Modifier les identifiants</button>
           </form>
         </section>
       </main>

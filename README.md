@@ -17,16 +17,19 @@ php -S 0.0.0.0:4173
 Le site est disponible sur `http://localhost:4173` et l’administration sur
 `http://localhost:4173/admin/`.
 
-À la première ouverture de l’administration, créez le mot de passe administrateur.
-Aucun identifiant ou mot de passe par défaut n’est inclus dans le dépôt.
+Sur une installation neuve, connectez-vous avec le nom d’utilisateur `FECAPAS` et
+le mot de passe initial communiqué au responsable du site. Le tableau de bord impose
+leur modification avant toute publication.
 
 L’administration permet de modifier la page d’accueil, les pages détaillées de la
 mission, des actions et des actualités, leurs images de couverture et leurs galeries.
+Les boutons d’ajout et de suppression permettent de gérer jusqu’à 20 actions et
+20 actualités sans modifier le code.
 
 ## Stockage
 
 - le contenu modifié est enregistré dans `data/content.json`
-- le mot de passe haché est enregistré dans `data/auth.json`
+- le nom d’utilisateur et le mot de passe haché sont enregistrés dans `data/auth.json`
 - les images ajoutées depuis l’administration sont enregistrées dans `uploads`
 
 Ces fichiers sont ignorés par Git. En production, sauvegardez les dossiers `data` et

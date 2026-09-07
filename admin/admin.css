@@ -570,6 +570,7 @@ fieldset {
   border: 1px solid #e0e3dd;
   border-radius: 8px;
   padding: 18px;
+  position: relative;
 }
 
 legend {
@@ -581,6 +582,48 @@ legend {
 
 fieldset label + label {
   margin-top: 13px;
+}
+
+.remove-item-button {
+  background: transparent;
+  border: 0;
+  color: var(--danger);
+  font-size: 0.62rem;
+  font-weight: 700;
+  position: absolute;
+  right: 16px;
+  top: 14px;
+}
+
+.editor-form-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.add-item-button {
+  background: #edf2ed;
+  border: 1px solid #d4ddd5;
+  border-radius: 7px;
+  color: var(--forest);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 13px 18px;
+}
+
+.add-item-button:hover {
+  background: #e3ebe4;
+}
+
+.editor-form-actions .save-button {
+  margin-left: auto;
+}
+
+.security-help {
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.6;
 }
 
 .section-intro-fields {
