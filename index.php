@@ -98,7 +98,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <?= e($hero['description']) ?>
             </p>
             <div class="hero-actions reveal">
-              <a class="button button-primary" href="#mission">
+              <a class="button button-primary" href="detail.php?type=mission">
                 <?= e($hero['primary_button']) ?>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M5 12h14M13 6l6 6-6 6" />
@@ -175,8 +175,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <p>
                 <?= e($mission['description']) ?>
               </p>
-              <a class="text-link" href="#actions">
-                Explorer nos axes d’action
+              <a class="text-link" href="detail.php?type=mission">
+                Découvrir notre mission
                 <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -244,62 +244,37 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
           </div>
 
           <div class="action-grid">
-            <article class="action-card action-card-featured reveal">
-              <span class="card-index">01</span>
-              <div class="action-icon">
-                <svg aria-hidden="true" viewBox="0 0 24 24">
-                  <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
-                  <path d="m8.5 12 2.2 2.2 4.8-5" />
-                </svg>
-              </div>
-              <h3><?= e($actions[0]['title']) ?></h3>
-              <p>
-                <?= e($actions[0]['description']) ?>
-              </p>
-              <div class="action-decoration"></div>
-            </article>
-
-            <article class="action-card reveal">
-              <span class="card-index">02</span>
-              <div class="action-icon">
-                <svg aria-hidden="true" viewBox="0 0 24 24">
-                  <path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <h3><?= e($actions[1]['title']) ?></h3>
-              <p>
-                <?= e($actions[1]['description']) ?>
-              </p>
-            </article>
-
-            <article class="action-card reveal">
-              <span class="card-index">03</span>
-              <div class="action-icon">
-                <svg aria-hidden="true" viewBox="0 0 24 24">
-                  <path d="M3 11.5 12 4l9 7.5" />
-                  <path d="M5 10v10h14V10M9 20v-6h6v6" />
-                </svg>
-              </div>
-              <h3><?= e($actions[2]['title']) ?></h3>
-              <p>
-                <?= e($actions[2]['description']) ?>
-              </p>
-            </article>
-
-            <article class="action-card reveal">
-              <span class="card-index">04</span>
-              <div class="action-icon">
-                <svg aria-hidden="true" viewBox="0 0 24 24">
-                  <path d="M8 12h8M12 8v8" />
-                  <circle cx="12" cy="12" r="9" />
-                </svg>
-              </div>
-              <h3><?= e($actions[3]['title']) ?></h3>
-              <p>
-                <?= e($actions[3]['description']) ?>
-              </p>
-            </article>
+            <?php foreach ($actions as $index => $action): ?>
+              <a
+                class="action-card<?= $index === 0 ? ' action-card-featured' : '' ?> reveal"
+                href="detail.php?type=action&amp;id=<?= $index ?>"
+              >
+                <span class="card-index"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></span>
+                <div class="action-icon">
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <?php if ($index % 4 === 0): ?>
+                      <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
+                      <path d="m8.5 12 2.2 2.2 4.8-5" />
+                    <?php elseif ($index % 4 === 1): ?>
+                      <path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    <?php elseif ($index % 4 === 2): ?>
+                      <path d="M3 11.5 12 4l9 7.5" />
+                      <path d="M5 10v10h14V10M9 20v-6h6v6" />
+                    <?php else: ?>
+                      <path d="M8 12h8M12 8v8" />
+                      <circle cx="12" cy="12" r="9" />
+                    <?php endif; ?>
+                  </svg>
+                </div>
+                <h3><?= e(item_value($action, 'title')) ?></h3>
+                <p><?= e(item_value($action, 'description')) ?></p>
+                <span class="action-link">Découvrir <b aria-hidden="true">→</b></span>
+                <?php if ($index === 0): ?>
+                  <div class="action-decoration"></div>
+                <?php endif; ?>
+              </a>
+            <?php endforeach; ?>
           </div>
         </div>
       </section>
@@ -337,67 +312,51 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             </a>
           </div>
 
-          <div class="news-grid">
-            <a
-              class="news-card news-card-large reveal"
-              href="<?= e($news[0]['url']) ?>"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <div class="news-image">
-                <img
-                  src="<?= e(public_asset_url($news[0]['image'])) ?>"
-                  alt="<?= e($news[0]['image_alt']) ?>"
-                />
-                <span class="news-category"><?= e($news[0]['category']) ?></span>
-              </div>
-              <div class="news-body">
-                <time datetime="<?= e($news[0]['date']) ?>"><?= e($news[0]['date_label']) ?></time>
-                <h3><?= e($news[0]['title']) ?></h3>
-                <span class="read-more">Lire sur Facebook <b aria-hidden="true">↗</b></span>
-              </div>
-            </a>
-
-            <div class="news-side">
+          <?php if ($news !== []): ?>
+            <?php $featuredNews = $news[0]; ?>
+            <div class="news-grid<?= count($news) === 1 ? ' news-grid-single' : '' ?>">
               <a
-                class="news-card news-card-horizontal reveal"
-                href="<?= e($news[1]['url']) ?>"
-                target="_blank"
-                rel="noreferrer"
+                class="news-card news-card-large reveal"
+                href="detail.php?type=news&amp;id=0"
               >
-                <div class="news-thumb">
+                <div class="news-image">
                   <img
-                    src="<?= e(public_asset_url($news[1]['image'])) ?>"
-                    alt="<?= e($news[1]['image_alt']) ?>"
+                    src="<?= e(public_asset_url(item_value($featuredNews, 'image'))) ?>"
+                    alt="<?= e(item_value($featuredNews, 'image_alt')) ?>"
                   />
+                  <span class="news-category"><?= e(item_value($featuredNews, 'category')) ?></span>
                 </div>
                 <div class="news-body">
-                  <time datetime="<?= e($news[1]['date']) ?>"><?= e($news[1]['date_label']) ?></time>
-                  <h3><?= e($news[1]['title']) ?></h3>
-                  <span class="read-more">Découvrir <b aria-hidden="true">↗</b></span>
+                  <time datetime="<?= e(item_value($featuredNews, 'date')) ?>"><?= e(item_value($featuredNews, 'date_label')) ?></time>
+                  <h3><?= e(item_value($featuredNews, 'title')) ?></h3>
+                  <span class="read-more">Découvrir <b aria-hidden="true">→</b></span>
                 </div>
               </a>
 
-              <a
-                class="news-card news-card-horizontal reveal"
-                href="<?= e($news[2]['url']) ?>"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <div class="news-thumb">
-                  <img
-                    src="<?= e(public_asset_url($news[2]['image'])) ?>"
-                    alt="<?= e($news[2]['image_alt']) ?>"
-                  />
+              <?php if (count($news) > 1): ?>
+                <div class="news-side">
+                  <?php foreach (array_slice($news, 1, null, true) as $index => $item): ?>
+                    <a
+                      class="news-card news-card-horizontal reveal"
+                      href="detail.php?type=news&amp;id=<?= $index ?>"
+                    >
+                      <div class="news-thumb">
+                        <img
+                          src="<?= e(public_asset_url(item_value($item, 'image'))) ?>"
+                          alt="<?= e(item_value($item, 'image_alt')) ?>"
+                        />
+                      </div>
+                      <div class="news-body">
+                        <time datetime="<?= e(item_value($item, 'date')) ?>"><?= e(item_value($item, 'date_label')) ?></time>
+                        <h3><?= e(item_value($item, 'title')) ?></h3>
+                        <span class="read-more">Découvrir <b aria-hidden="true">→</b></span>
+                      </div>
+                    </a>
+                  <?php endforeach; ?>
                 </div>
-                <div class="news-body">
-                  <time datetime="<?= e($news[2]['date']) ?>"><?= e($news[2]['date_label']) ?></time>
-                  <h3><?= e($news[2]['title']) ?></h3>
-                  <span class="read-more">Découvrir <b aria-hidden="true">↗</b></span>
-                </div>
-              </a>
+              <?php endif; ?>
             </div>
-          </div>
+          <?php endif; ?>
         </div>
       </section>
 

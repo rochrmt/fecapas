@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/content.php';
 
+const INITIAL_ADMIN_USERNAME = 'FECAPAS';
+const INITIAL_ADMIN_PASSWORD_HASH = '$2y$10$smL/nbhWPxw/TRhVsCRChu7x9fFJHGThyE5SgiT1YH0G/naKdm8tW';
+
 function start_admin_session(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -34,7 +37,7 @@ function is_admin_configured(): bool
     return is_file(AUTH_FILE) && admin_password_hash() !== null;
 }
 
-function admin_password_hash(): ?string
+function admin_auth_data(): ?array
 {
     if (!is_file(AUTH_FILE)) {
         return null;
@@ -42,25 +45,76 @@ function admin_password_hash(): ?string
 
     $json = file_get_contents(AUTH_FILE);
     $auth = is_string($json) ? json_decode($json, true) : null;
-    $hash = is_array($auth) ? ($auth['password_hash'] ?? null) : null;
+
+    return is_array($auth) ? $auth : null;
+}
+
+function admin_password_hash(): ?string
+{
+    $hash = admin_auth_data()['password_hash'] ?? null;
 
     return is_string($hash) && $hash !== '' ? $hash : null;
 }
 
-function configure_admin_password(string $password): void
+function admin_username(): string
 {
-    if (strlen($password) < 10) {
+    $username = admin_auth_data()['username'] ?? INITIAL_ADMIN_USERNAME;
+
+    return is_string($username) && $username !== '' ? $username : INITIAL_ADMIN_USERNAME;
+}
+
+function admin_requires_credential_change(): bool
+{
+    return (admin_auth_data()['must_change_credentials'] ?? false) === true;
+}
+
+function initialize_default_admin(): void
+{
+    if (is_file(AUTH_FILE)) {
+        return;
+    }
+
+    write_admin_auth([
+        'username' => INITIAL_ADMIN_USERNAME,
+        'password_hash' => INITIAL_ADMIN_PASSWORD_HASH,
+        'must_change_credentials' => true,
+    ]);
+}
+
+function save_admin_credentials(string $username, ?string $password, bool $mustChangeCredentials = false): void
+{
+    $username = trim($username);
+
+    if (preg_match('/^[A-Za-z0-9._@-]{3,80}$/', $username) !== 1) {
+        throw new InvalidArgumentException(
+            'Le nom d’utilisateur doit contenir 3 à 80 lettres, chiffres ou caractères . _ @ -.',
+        );
+    }
+
+    if ($password !== null && strlen($password) < 10) {
         throw new InvalidArgumentException('Le mot de passe doit contenir au moins 10 caractères.');
     }
 
+    $passwordHash = $password === null ? admin_password_hash() : password_hash($password, PASSWORD_DEFAULT);
+
+    if ($passwordHash === null) {
+        throw new RuntimeException('Aucun mot de passe administrateur valide n’est disponible.');
+    }
+
+    write_admin_auth([
+        'username' => $username,
+        'password_hash' => $passwordHash,
+        'must_change_credentials' => $mustChangeCredentials,
+    ]);
+}
+
+function write_admin_auth(array $auth): void
+{
     ensure_storage_directories();
-    $payload = json_encode(
-        ['password_hash' => password_hash($password, PASSWORD_DEFAULT)],
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES,
-    );
+    $payload = json_encode($auth, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
     if (!is_string($payload) || file_put_contents(AUTH_FILE, $payload . PHP_EOL, LOCK_EX) === false) {
-        throw new RuntimeException('Le mot de passe administrateur n’a pas pu être enregistré.');
+        throw new RuntimeException('Les identifiants administrateur n’ont pas pu être enregistrés.');
     }
 
     @chmod(AUTH_FILE, 0600);
@@ -71,16 +125,21 @@ function admin_is_authenticated(): bool
     return ($_SESSION['admin_authenticated'] ?? false) === true;
 }
 
-function authenticate_admin(string $password): bool
+function authenticate_admin(string $username, string $password): bool
 {
     $hash = admin_password_hash();
 
-    if ($hash === null || !password_verify($password, $hash)) {
+    if (
+        $hash === null
+        || !hash_equals(admin_username(), trim($username))
+        || !password_verify($password, $hash)
+    ) {
         return false;
     }
 
     session_regenerate_id(true);
     $_SESSION['admin_authenticated'] = true;
+    $_SESSION['admin_username'] = admin_username();
     $_SESSION['login_attempts'] = 0;
 
     return true;
@@ -154,6 +213,53 @@ function process_image_upload(string $fieldName, string $currentPath): string
         return $currentPath;
     }
 
+    return save_uploaded_image($file);
+}
+
+function process_gallery_uploads(string $fieldName, mixed $currentGallery, mixed $removedIndexes): array
+{
+    $gallery = gallery_paths($currentGallery);
+    $indexesToRemove = is_array($removedIndexes)
+        ? array_map('intval', $removedIndexes)
+        : [];
+
+    $gallery = array_values(array_filter(
+        $gallery,
+        static fn (string $path, int $index): bool => !in_array($index, $indexesToRemove, true),
+        ARRAY_FILTER_USE_BOTH,
+    ));
+
+    $uploads = $_FILES[$fieldName] ?? null;
+
+    if (!is_array($uploads) || !is_array($uploads['name'] ?? null)) {
+        return $gallery;
+    }
+
+    foreach ($uploads['name'] as $index => $name) {
+        $error = $uploads['error'][$index] ?? UPLOAD_ERR_NO_FILE;
+
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+
+        if (count($gallery) >= 12) {
+            throw new InvalidArgumentException('Une galerie peut contenir au maximum 12 images.');
+        }
+
+        $gallery[] = save_uploaded_image([
+            'name' => $name,
+            'type' => $uploads['type'][$index] ?? '',
+            'tmp_name' => $uploads['tmp_name'][$index] ?? '',
+            'error' => $error,
+            'size' => $uploads['size'][$index] ?? 0,
+        ]);
+    }
+
+    return $gallery;
+}
+
+function save_uploaded_image(array $file): string
+{
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         throw new RuntimeException('Le téléversement de l’image a échoué.');
     }
