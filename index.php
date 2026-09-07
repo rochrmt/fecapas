@@ -1,3 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/inc/content.php';
+
+$content = load_content();
+$identity = $content['identity'];
+$hero = $content['hero'];
+$mission = $content['mission'];
+$values = $content['values'];
+$actionsIntro = $content['actions_intro'];
+$actions = $content['actions'];
+$quote = $content['quote'];
+$newsIntro = $content['news_intro'];
+$news = $content['news'];
+$join = $content['join'];
+
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+?>
 <!doctype html>
 <html lang="fr">
   <head>
@@ -5,15 +27,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="FECAPAS-RCA — Les Femmes Courageuses en Action pour la Paix et la Sécurité en République centrafricaine."
+      content="<?= e($hero['description']) ?>"
     />
     <meta name="theme-color" content="#123f2e" />
-    <meta property="og:title" content="FECAPAS-RCA — Femmes de courage, bâtisseuses de paix" />
+    <meta property="og:title" content="<?= e($identity['name']) ?> — <?= e($hero['title_after']) ?>" />
     <meta
       property="og:description"
-      content="Découvrez les engagements et les actions de FECAPAS en faveur de la paix et de la sécurité."
+      content="<?= e($hero['description']) ?>"
     />
-    <meta property="og:image" content="assets/images/anniversaire-fecapas.webp" />
+    <meta property="og:image" content="<?= e(public_asset_url($hero['image'])) ?>" />
     <link rel="icon" type="image/png" href="assets/images/favicon.png" />
     <script>
       document.documentElement.classList.add("js");
@@ -25,7 +47,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
-    <title>FECAPAS-RCA | Femmes de courage, bâtisseuses de paix</title>
+    <title><?= e($identity['name']) ?>-RCA | <?= e($hero['title_after']) ?></title>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Aller au contenu</a>
@@ -34,11 +56,11 @@
       <div class="nav-wrap">
         <a class="brand" href="#accueil" aria-label="FECAPAS-RCA — Accueil">
           <span class="brand-mark">
-            <img src="assets/images/logo-fecapas.webp" alt="" />
+            <img src="<?= e(public_asset_url($identity['logo'])) ?>" alt="" />
           </span>
           <span>
-            <strong>FECAPAS</strong>
-            <small>République centrafricaine</small>
+            <strong><?= e($identity['name']) ?></strong>
+            <small><?= e($identity['location']) ?></small>
           </span>
         </a>
 
@@ -66,42 +88,41 @@
           <div class="hero-content">
             <div class="eyebrow reveal">
               <span class="eyebrow-dot"></span>
-              Paix • Sécurité • Leadership féminin
+              <?= e($hero['eyebrow']) ?>
             </div>
             <h1 class="reveal">
-              Femmes de <em>courage</em>,<br />
-              bâtisseuses de paix.
+              <?= e($hero['title_before']) ?> <em><?= e($hero['title_accent']) ?></em>,<br />
+              <?= e($hero['title_after']) ?>
             </h1>
             <p class="hero-copy reveal">
-              FECAPAS mobilise les femmes centrafricaines pour faire grandir une culture
-              de paix, de sécurité et de solidarité au cœur de nos communautés.
+              <?= e($hero['description']) ?>
             </p>
             <div class="hero-actions reveal">
               <a class="button button-primary" href="#mission">
-                Découvrir notre mission
+                <?= e($hero['primary_button']) ?>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
               </a>
               <a
                 class="button button-link"
-                href="https://www.facebook.com/profile.php?id=61564006413825"
+                href="<?= e($identity['facebook_url']) ?>"
                 target="_blank"
                 rel="noreferrer"
               >
-                Suivre nos actions
+                <?= e($hero['secondary_button']) ?>
                 <span aria-hidden="true">↗</span>
               </a>
             </div>
             <div class="hero-proof reveal">
               <div class="proof-item">
-                <strong>02</strong>
-                <span>années d’engagement</span>
+                <strong><?= e($hero['stat_one_value']) ?></strong>
+                <span><?= e($hero['stat_one_label']) ?></span>
               </div>
               <span class="proof-divider"></span>
               <div class="proof-item">
-                <strong>RCA</strong>
-                <span>au cœur de notre action</span>
+                <strong><?= e($hero['stat_two_value']) ?></strong>
+                <span><?= e($hero['stat_two_label']) ?></span>
               </div>
             </div>
           </div>
@@ -109,19 +130,19 @@
           <div class="hero-visual reveal">
             <div class="hero-photo-frame">
               <img
-                src="assets/images/message-compassion.webp"
-                alt="La présidente de FECAPAS lors d’une rencontre publique"
+                src="<?= e(public_asset_url($hero['image'])) ?>"
+                alt="<?= e($hero['image_alt']) ?>"
               />
               <div class="photo-shade"></div>
               <div class="photo-caption">
-                <span>Leadership</span>
-                <strong>Porter la voix des femmes</strong>
+                <span><?= e($hero['image_label']) ?></span>
+                <strong><?= e($hero['image_title']) ?></strong>
               </div>
             </div>
             <div class="logo-orbit" aria-hidden="true">
               <span class="orbit-line"></span>
               <div class="logo-card">
-                <img src="assets/images/logo-fecapas.webp" alt="" />
+                <img src="<?= e(public_asset_url($identity['logo'])) ?>" alt="" />
               </div>
             </div>
             <div class="hero-badge">
@@ -142,21 +163,17 @@
       <section class="manifesto section" id="mission">
         <div class="container">
           <div class="section-heading reveal">
-            <p class="section-kicker">Notre raison d’être</p>
-            <h2>Transformer le courage<br />en <em>impact collectif.</em></h2>
+            <p class="section-kicker"><?= e($mission['kicker']) ?></p>
+            <h2><?= e($mission['title']) ?><br /><em><?= e($mission['title_accent']) ?></em></h2>
           </div>
 
           <div class="manifesto-grid">
             <div class="manifesto-copy reveal">
               <p class="lead">
-                Nous croyons que chaque femme peut devenir une force de dialogue,
-                de protection et de réconciliation.
+                <?= e($mission['lead']) ?>
               </p>
               <p>
-                L’Association des Femmes Courageuses en Action pour la Paix et la
-                Sécurité crée des espaces d’écoute, de mobilisation et d’engagement
-                afin que les femmes prennent pleinement part à la construction d’une
-                République centrafricaine plus apaisée.
+                <?= e($mission['description']) ?>
               </p>
               <a class="text-link" href="#actions">
                 Explorer nos axes d’action
@@ -168,8 +185,8 @@
               <article class="value-card reveal">
                 <span class="value-number">01</span>
                 <div>
-                  <h3>La paix par le dialogue</h3>
-                  <p>Rassembler, écouter et créer des passerelles durables.</p>
+                  <h3><?= e($values[0]['title']) ?></h3>
+                  <p><?= e($values[0]['description']) ?></p>
                 </div>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M4 5h16v11H8l-4 4V5Z" />
@@ -179,8 +196,8 @@
               <article class="value-card reveal">
                 <span class="value-number">02</span>
                 <div>
-                  <h3>La force des femmes</h3>
-                  <p>Faire émerger des voix, des talents et des initiatives.</p>
+                  <h3><?= e($values[1]['title']) ?></h3>
+                  <p><?= e($values[1]['description']) ?></p>
                 </div>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <circle cx="12" cy="8" r="4" />
@@ -190,8 +207,8 @@
               <article class="value-card reveal">
                 <span class="value-number">03</span>
                 <div>
-                  <h3>L’action de proximité</h3>
-                  <p>Agir avec les communautés, au plus près des réalités.</p>
+                  <h3><?= e($values[2]['title']) ?></h3>
+                  <p><?= e($values[2]['description']) ?></p>
                 </div>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M12 21s7-5.5 7-12A7 7 0 0 0 5 9c0 6.5 7 12 7 12Z" />
@@ -218,12 +235,11 @@
         <div class="container">
           <div class="actions-head reveal">
             <div>
-              <p class="section-kicker">Nos champs d’action</p>
-              <h2>Agir aujourd’hui.<br /><em>Inspirer demain.</em></h2>
+              <p class="section-kicker"><?= e($actionsIntro['kicker']) ?></p>
+              <h2><?= e($actionsIntro['title']) ?><br /><em><?= e($actionsIntro['title_accent']) ?></em></h2>
             </div>
             <p>
-              Des actions ancrées dans la réalité, portées par la conviction que
-              la paix se construit ensemble.
+              <?= e($actionsIntro['description']) ?>
             </p>
           </div>
 
@@ -236,10 +252,9 @@
                   <path d="m8.5 12 2.2 2.2 4.8-5" />
                 </svg>
               </div>
-              <h3>Sensibilisation à la paix</h3>
+              <h3><?= e($actions[0]['title']) ?></h3>
               <p>
-                Promouvoir une culture de non-violence, de responsabilité et
-                de cohésion au sein des communautés.
+                <?= e($actions[0]['description']) ?>
               </p>
               <div class="action-decoration"></div>
             </article>
@@ -252,10 +267,9 @@
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
-              <h3>Leadership féminin</h3>
+              <h3><?= e($actions[1]['title']) ?></h3>
               <p>
-                Encourager les femmes à prendre la parole et à participer aux
-                décisions qui façonnent leur avenir.
+                <?= e($actions[1]['description']) ?>
               </p>
             </article>
 
@@ -267,10 +281,9 @@
                   <path d="M5 10v10h14V10M9 20v-6h6v6" />
                 </svg>
               </div>
-              <h3>Mobilisation communautaire</h3>
+              <h3><?= e($actions[2]['title']) ?></h3>
               <p>
-                Fédérer citoyens, responsables et partenaires autour
-                d’initiatives locales concrètes.
+                <?= e($actions[2]['description']) ?>
               </p>
             </article>
 
@@ -282,10 +295,9 @@
                   <circle cx="12" cy="12" r="9" />
                 </svg>
               </div>
-              <h3>Solidarité & compassion</h3>
+              <h3><?= e($actions[3]['title']) ?></h3>
               <p>
-                Être présente auprès des populations et porter des messages
-                d’unité face aux épreuves.
+                <?= e($actions[3]['description']) ?>
               </p>
             </article>
           </div>
@@ -294,16 +306,16 @@
 
       <section class="quote-section">
         <div class="quote-photo" aria-hidden="true">
-          <img src="assets/images/intercession-paix.webp" alt="" />
+          <img src="<?= e(public_asset_url($quote['image'])) ?>" alt="" />
         </div>
         <div class="quote-overlay"></div>
         <div class="quote-content container reveal">
-          <img class="quote-logo" src="assets/images/logo-fecapas.webp" alt="" />
+          <img class="quote-logo" src="<?= e(public_asset_url($identity['logo'])) ?>" alt="" />
           <blockquote>
-            « Pour la paix par les femmes,<br />
-            avec <em>courage</em> et détermination. »
+            <?= e($quote['text_before']) ?><br />
+            <em><?= e($quote['accent']) ?></em> <?= e($quote['text_after']) ?>
           </blockquote>
-          <p>Ensemble, bâtissons une nation de paix et de sécurité.</p>
+          <p><?= e($quote['subtitle']) ?></p>
         </div>
       </section>
 
@@ -311,12 +323,12 @@
         <div class="container">
           <div class="news-head reveal">
             <div>
-              <p class="section-kicker">Sur le terrain</p>
-              <h2>Nos temps <em>forts.</em></h2>
+              <p class="section-kicker"><?= e($newsIntro['kicker']) ?></p>
+              <h2><?= e($newsIntro['title']) ?> <em><?= e($newsIntro['title_accent']) ?></em></h2>
             </div>
             <a
               class="text-link"
-              href="https://www.facebook.com/profile.php?id=61564006413825"
+              href="<?= e($identity['facebook_url']) ?>"
               target="_blank"
               rel="noreferrer"
             >
@@ -328,20 +340,20 @@
           <div class="news-grid">
             <a
               class="news-card news-card-large reveal"
-              href="https://www.facebook.com/photo/?fbid=122209644860466880&amp;set=pb.61564006413825.-2207520000"
+              href="<?= e($news[0]['url']) ?>"
               target="_blank"
               rel="noreferrer"
             >
               <div class="news-image">
                 <img
-                  src="assets/images/anniversaire-fecapas.webp"
-                  alt="Affiche du deuxième anniversaire de FECAPAS"
+                  src="<?= e(public_asset_url($news[0]['image'])) ?>"
+                  alt="<?= e($news[0]['image_alt']) ?>"
                 />
-                <span class="news-category">Vie de l’association</span>
+                <span class="news-category"><?= e($news[0]['category']) ?></span>
               </div>
               <div class="news-body">
-                <time datetime="2026-08-10">10 août 2026</time>
-                <h3>Deux années de courage, de foi et d’actions pour la paix</h3>
+                <time datetime="<?= e($news[0]['date']) ?>"><?= e($news[0]['date_label']) ?></time>
+                <h3><?= e($news[0]['title']) ?></h3>
                 <span class="read-more">Lire sur Facebook <b aria-hidden="true">↗</b></span>
               </div>
             </a>
@@ -349,38 +361,38 @@
             <div class="news-side">
               <a
                 class="news-card news-card-horizontal reveal"
-                href="https://www.facebook.com/photo/?fbid=122209015640466880&amp;set=pb.61564006413825.-2207520000"
+                href="<?= e($news[1]['url']) ?>"
                 target="_blank"
                 rel="noreferrer"
               >
                 <div class="news-thumb">
                   <img
-                    src="assets/images/intercession-paix.webp"
-                    alt="Affiche de la journée nationale d’intercession pour la paix"
+                    src="<?= e(public_asset_url($news[1]['image'])) ?>"
+                    alt="<?= e($news[1]['image_alt']) ?>"
                   />
                 </div>
                 <div class="news-body">
-                  <time datetime="2026-08-05">05 août 2026</time>
-                  <h3>Une journée nationale d’intercession pour la paix</h3>
+                  <time datetime="<?= e($news[1]['date']) ?>"><?= e($news[1]['date_label']) ?></time>
+                  <h3><?= e($news[1]['title']) ?></h3>
                   <span class="read-more">Découvrir <b aria-hidden="true">↗</b></span>
                 </div>
               </a>
 
               <a
                 class="news-card news-card-horizontal reveal"
-                href="https://www.facebook.com/photo/?fbid=122209767404466880&amp;set=pb.61564006413825.-2207520000"
+                href="<?= e($news[2]['url']) ?>"
                 target="_blank"
                 rel="noreferrer"
               >
                 <div class="news-thumb">
                   <img
-                    src="assets/images/message-compassion.webp"
-                    alt="FECAPAS réunie autour de sa présidente"
+                    src="<?= e(public_asset_url($news[2]['image'])) ?>"
+                    alt="<?= e($news[2]['image_alt']) ?>"
                   />
                 </div>
                 <div class="news-body">
-                  <time datetime="2026-08-11">11 août 2026</time>
-                  <h3>Compassion et appel à une action urgente pour la sécurité routière</h3>
+                  <time datetime="<?= e($news[2]['date']) ?>"><?= e($news[2]['date_label']) ?></time>
+                  <h3><?= e($news[2]['title']) ?></h3>
                   <span class="read-more">Découvrir <b aria-hidden="true">↗</b></span>
                 </div>
               </a>
@@ -399,19 +411,18 @@
             </svg>
           </div>
           <div class="join-copy">
-            <p class="section-kicker">Rejoignez le mouvement</p>
-            <h2>Votre voix peut faire<br />avancer la <em>paix.</em></h2>
+            <p class="section-kicker"><?= e($join['kicker']) ?></p>
+            <h2><?= e($join['title']) ?><br /><em><?= e($join['title_accent']) ?></em></h2>
             <p>
-              Suivez FECAPAS-RCA, partagez nos initiatives et prenez part
-              à une communauté de femmes et d’alliés engagés.
+              <?= e($join['description']) ?>
             </p>
             <a
               class="button button-light"
-              href="https://www.facebook.com/profile.php?id=61564006413825"
+              href="<?= e($identity['facebook_url']) ?>"
               target="_blank"
               rel="noreferrer"
             >
-              Rejoindre sur Facebook
+              <?= e($join['button']) ?>
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
@@ -426,14 +437,14 @@
         <div class="footer-brand">
           <a class="brand brand-light" href="#accueil">
             <span class="brand-mark">
-              <img src="assets/images/logo-fecapas.webp" alt="" />
+              <img src="<?= e(public_asset_url($identity['logo'])) ?>" alt="" />
             </span>
             <span>
-              <strong>FECAPAS</strong>
-              <small>Femmes courageuses en action</small>
+              <strong><?= e($identity['name']) ?></strong>
+              <small><?= e($identity['short_description']) ?></small>
             </span>
           </a>
-          <p>Pour la paix et la sécurité en République centrafricaine.</p>
+          <p><?= e($identity['footer_text']) ?></p>
         </div>
         <div class="footer-links">
           <div>
@@ -445,17 +456,18 @@
           <div>
             <h3>Nous suivre</h3>
             <a
-              href="https://www.facebook.com/profile.php?id=61564006413825"
+              href="<?= e($identity['facebook_url']) ?>"
               target="_blank"
               rel="noreferrer"
             >
               Facebook <span aria-hidden="true">↗</span>
             </a>
+            <a href="admin/">Administration</a>
           </div>
         </div>
       </div>
       <div class="container footer-bottom">
-        <p>© <span id="current-year"></span> FECAPAS-RCA. Tous droits réservés.</p>
+        <p>© <span id="current-year"></span> <?= e($identity['name']) ?>-RCA. Tous droits réservés.</p>
         <p>Femmes • Paix • Sécurité</p>
       </div>
     </footer>
