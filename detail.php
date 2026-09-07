@@ -171,7 +171,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 
               <?php if ($sourceUrl !== ''): ?>
                 <a class="text-link detail-source" href="<?= e($sourceUrl) ?>" target="_blank" rel="noreferrer">
-                  Voir la publication originale sur Facebook
+                  Consulter la source originale
                   <span aria-hidden="true">↗</span>
                 </a>
               <?php endif; ?>
@@ -190,7 +190,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
             <div class="container">
               <div class="detail-section-heading reveal">
                 <p class="section-kicker">En images</p>
-                <h2>Galerie de <em>l’initiative.</em></h2>
+                <h2><?= $type === 'mission' ? 'Nos engagements' : 'Galerie de' ?> <em><?= $type === 'mission' ? 'en images.' : 'l’initiative.' ?></em></h2>
               </div>
               <div class="detail-gallery-grid">
                 <?php foreach ($gallery as $galleryIndex => $galleryImage): ?>
