@@ -157,7 +157,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $content = update_scalar_section(
                         $content,
                         'mission',
-                        ['kicker', 'title', 'title_accent', 'lead', 'description'],
+                        ['kicker', 'title', 'title_accent', 'lead', 'description', 'image_alt'],
+                    );
+                    $content['mission']['detail_content'] = clean_text($_POST['detail_content'] ?? '', 12000);
+                    $content['mission']['image'] = process_image_upload(
+                        'mission_image',
+                        field_value($content['mission'], 'image'),
+                    );
+                    $content['mission']['gallery'] = process_gallery_uploads(
+                        'mission_gallery',
+                        $content['mission']['gallery'] ?? [],
+                        $_POST['mission_gallery_remove'] ?? [],
                     );
                     break;
 
@@ -185,6 +195,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $posted = is_array($posted) ? $posted : [];
                         $content['actions'][$index]['title'] = clean_text($posted['title'] ?? '');
                         $content['actions'][$index]['description'] = clean_text($posted['description'] ?? '');
+                        $content['actions'][$index]['image_alt'] = clean_text($posted['image_alt'] ?? '');
+                        $content['actions'][$index]['detail_content'] = clean_text(
+                            $posted['detail_content'] ?? '',
+                            12000,
+                        );
+                        $content['actions'][$index]['image'] = process_image_upload(
+                            'action_image_' . $index,
+                            field_value($content['actions'][$index], 'image'),
+                        );
+                        $content['actions'][$index]['gallery'] = process_gallery_uploads(
+                            'action_gallery_' . $index,
+                            $content['actions'][$index]['gallery'] ?? [],
+                            $posted['gallery_remove'] ?? [],
+                        );
                     }
                     break;
 
@@ -215,11 +239,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $content['news'][$index]['date_label'] = clean_text($posted['date_label'] ?? '', 80);
                         $content['news'][$index]['category'] = clean_text($posted['category'] ?? '', 80);
                         $content['news'][$index]['title'] = clean_text($posted['title'] ?? '');
+                        $content['news'][$index]['summary'] = clean_text($posted['summary'] ?? '', 500);
                         $content['news'][$index]['image_alt'] = clean_text($posted['image_alt'] ?? '');
                         $content['news'][$index]['url'] = clean_url($posted['url'] ?? '');
+                        $content['news'][$index]['detail_content'] = clean_text(
+                            $posted['detail_content'] ?? '',
+                            12000,
+                        );
                         $content['news'][$index]['image'] = process_image_upload(
                             'news_image_' . $index,
                             field_value($content['news'][$index], 'image'),
+                        );
+                        $content['news'][$index]['gallery'] = process_gallery_uploads(
+                            'news_gallery_' . $index,
+                            $content['news'][$index]['gallery'] ?? [],
+                            $posted['gallery_remove'] ?? [],
                         );
                     }
                     break;
@@ -450,7 +484,7 @@ $join = $content['join'];
             <span>03</span>
             <div><p>Présentation</p><h2>Notre mission</h2></div>
           </div>
-          <form method="post">
+          <form method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>" />
             <input type="hidden" name="request_action" value="save" />
             <input type="hidden" name="section" value="mission" />
@@ -460,6 +494,38 @@ $join = $content['join'];
               <label>Partie colorée<input name="title_accent" value="<?= e(field_value($mission, 'title_accent')) ?>" /></label>
               <label class="field-full">Phrase principale<textarea name="lead" rows="3"><?= e(field_value($mission, 'lead')) ?></textarea></label>
               <label class="field-full">Description<textarea name="description" rows="5"><?= e(field_value($mission, 'description')) ?></textarea></label>
+              <label class="field-full">Contenu détaillé<textarea name="detail_content" rows="10"><?= e(field_value($mission, 'detail_content')) ?></textarea></label>
+              <label class="field-full">Description accessible de l’image<input name="image_alt" value="<?= e(field_value($mission, 'image_alt')) ?>" /></label>
+              <label class="upload-field field-full">
+                <span>Image de couverture de la mission</span>
+                <span class="upload-box upload-wide">
+                  <img src="<?= e(admin_asset_url(field_value($mission, 'image'))) ?>" alt="Image actuelle" />
+                  <span><strong>Choisir une nouvelle couverture</strong><small>JPG, PNG, WebP ou GIF</small></span>
+                  <input type="file" name="mission_image" accept="image/jpeg,image/png,image/webp,image/gif" />
+                </span>
+              </label>
+              <label class="upload-field field-full">
+                <span>Ajouter des images à la galerie</span>
+                <span class="multi-upload-box">
+                  <strong>Sélectionner plusieurs images</strong>
+                  <small>12 images maximum par galerie, 8 Mo par fichier</small>
+                  <input type="file" name="mission_gallery[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+                </span>
+              </label>
+              <?php $missionGallery = gallery_paths($mission['gallery'] ?? []); ?>
+              <?php if ($missionGallery !== []): ?>
+                <div class="gallery-manager field-full">
+                  <?php foreach ($missionGallery as $galleryIndex => $galleryImage): ?>
+                    <label class="gallery-manager-item">
+                      <img src="<?= e(admin_asset_url($galleryImage)) ?>" alt="" />
+                      <span>
+                        <input type="checkbox" name="mission_gallery_remove[]" value="<?= $galleryIndex ?>" />
+                        Retirer
+                      </span>
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
             </div>
             <button class="save-button" type="submit">Enregistrer la mission</button>
           </form>
@@ -492,7 +558,7 @@ $join = $content['join'];
             <span>05</span>
             <div><p>Engagement</p><h2>Nos actions</h2></div>
           </div>
-          <form method="post">
+          <form method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>" />
             <input type="hidden" name="request_action" value="save" />
             <input type="hidden" name="section" value="actions" />
@@ -508,6 +574,38 @@ $join = $content['join'];
                   <legend>Action <?= $index + 1 ?></legend>
                   <label>Titre<input name="actions[<?= $index ?>][title]" value="<?= e(field_value($action, 'title')) ?>" /></label>
                   <label>Description<textarea name="actions[<?= $index ?>][description]" rows="4"><?= e(field_value($action, 'description')) ?></textarea></label>
+                  <label>Contenu détaillé<textarea name="actions[<?= $index ?>][detail_content]" rows="8"><?= e(field_value($action, 'detail_content')) ?></textarea></label>
+                  <label>Description accessible de l’image<input name="actions[<?= $index ?>][image_alt]" value="<?= e(field_value($action, 'image_alt')) ?>" /></label>
+                  <label class="upload-field">
+                    <span>Image de couverture</span>
+                    <span class="upload-box upload-wide">
+                      <img src="<?= e(admin_asset_url(field_value($action, 'image'))) ?>" alt="Image actuelle" />
+                      <span><strong>Remplacer la couverture</strong><small>JPG, PNG, WebP ou GIF</small></span>
+                      <input type="file" name="action_image_<?= $index ?>" accept="image/jpeg,image/png,image/webp,image/gif" />
+                    </span>
+                  </label>
+                  <label class="upload-field">
+                    <span>Ajouter des images à la galerie</span>
+                    <span class="multi-upload-box">
+                      <strong>Sélectionner plusieurs images</strong>
+                      <small>12 images maximum</small>
+                      <input type="file" name="action_gallery_<?= $index ?>[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+                    </span>
+                  </label>
+                  <?php $actionGallery = gallery_paths($action['gallery'] ?? []); ?>
+                  <?php if ($actionGallery !== []): ?>
+                    <div class="gallery-manager">
+                      <?php foreach ($actionGallery as $galleryIndex => $galleryImage): ?>
+                        <label class="gallery-manager-item">
+                          <img src="<?= e(admin_asset_url($galleryImage)) ?>" alt="" />
+                          <span>
+                            <input type="checkbox" name="actions[<?= $index ?>][gallery_remove][]" value="<?= $galleryIndex ?>" />
+                            Retirer
+                          </span>
+                        </label>
+                      <?php endforeach; ?>
+                    </div>
+                  <?php endif; ?>
                 </fieldset>
               <?php endforeach; ?>
             </div>
@@ -566,7 +664,9 @@ $join = $content['join'];
                     <label>Catégorie<input name="news[<?= $index ?>][category]" value="<?= e(field_value($item, 'category')) ?>" /></label>
                     <label>Lien externe<input type="url" name="news[<?= $index ?>][url]" value="<?= e(field_value($item, 'url')) ?>" /></label>
                     <label class="field-full">Titre<textarea name="news[<?= $index ?>][title]" rows="2"><?= e(field_value($item, 'title')) ?></textarea></label>
+                    <label class="field-full">Résumé<textarea name="news[<?= $index ?>][summary]" rows="3"><?= e(field_value($item, 'summary')) ?></textarea></label>
                     <label class="field-full">Description accessible de l’image<input name="news[<?= $index ?>][image_alt]" value="<?= e(field_value($item, 'image_alt')) ?>" /></label>
+                    <label class="field-full">Contenu détaillé<textarea name="news[<?= $index ?>][detail_content]" rows="9"><?= e(field_value($item, 'detail_content')) ?></textarea></label>
                     <label class="upload-field field-full">
                       <span>Image de l’actualité</span>
                       <span class="upload-box upload-wide">
@@ -575,6 +675,28 @@ $join = $content['join'];
                         <input type="file" name="news_image_<?= $index ?>" accept="image/jpeg,image/png,image/webp,image/gif" />
                       </span>
                     </label>
+                    <label class="upload-field field-full">
+                      <span>Ajouter des images à la galerie</span>
+                      <span class="multi-upload-box">
+                        <strong>Sélectionner plusieurs images</strong>
+                        <small>12 images maximum</small>
+                        <input type="file" name="news_gallery_<?= $index ?>[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+                      </span>
+                    </label>
+                    <?php $newsGallery = gallery_paths($item['gallery'] ?? []); ?>
+                    <?php if ($newsGallery !== []): ?>
+                      <div class="gallery-manager field-full">
+                        <?php foreach ($newsGallery as $galleryIndex => $galleryImage): ?>
+                          <label class="gallery-manager-item">
+                            <img src="<?= e(admin_asset_url($galleryImage)) ?>" alt="" />
+                            <span>
+                              <input type="checkbox" name="news[<?= $index ?>][gallery_remove][]" value="<?= $galleryIndex ?>" />
+                              Retirer
+                            </span>
+                          </label>
+                        <?php endforeach; ?>
+                      </div>
+                    <?php endif; ?>
                   </div>
                 </fieldset>
               <?php endforeach; ?>

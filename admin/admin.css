@@ -486,6 +486,76 @@ textarea:focus {
   position: absolute;
 }
 
+.multi-upload-box {
+  background: #f7f7f3;
+  border: 1px dashed #c9cfc7;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 88px;
+  justify-content: center;
+  padding: 18px;
+  position: relative;
+}
+
+.multi-upload-box strong {
+  color: var(--forest);
+  font-size: 0.72rem;
+}
+
+.multi-upload-box small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 400;
+}
+
+.multi-upload-box input {
+  cursor: pointer;
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.gallery-manager {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  margin-top: 4px;
+}
+
+.gallery-manager-item {
+  background: #f7f7f3;
+  border: 1px solid #e0e3dd;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.gallery-manager-item img {
+  display: block;
+  height: 92px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.gallery-manager-item span {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.65rem;
+  gap: 7px;
+  padding: 9px;
+}
+
+.gallery-manager-item input {
+  accent-color: var(--forest);
+  height: 15px;
+  margin: 0;
+  width: 15px;
+}
+
 .repeat-grid {
   display: grid;
   gap: 16px;

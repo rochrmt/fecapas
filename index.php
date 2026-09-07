@@ -98,7 +98,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <?= e($hero['description']) ?>
             </p>
             <div class="hero-actions reveal">
-              <a class="button button-primary" href="#mission">
+              <a class="button button-primary" href="detail.php?type=mission">
                 <?= e($hero['primary_button']) ?>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M5 12h14M13 6l6 6-6 6" />
@@ -175,8 +175,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <p>
                 <?= e($mission['description']) ?>
               </p>
-              <a class="text-link" href="#actions">
-                Explorer nos axes d’action
+              <a class="text-link" href="detail.php?type=mission">
+                Découvrir notre mission
                 <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -244,7 +244,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
           </div>
 
           <div class="action-grid">
-            <article class="action-card action-card-featured reveal">
+            <a class="action-card action-card-featured reveal" href="detail.php?type=action&amp;id=0">
               <span class="card-index">01</span>
               <div class="action-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -256,10 +256,11 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <p>
                 <?= e($actions[0]['description']) ?>
               </p>
+              <span class="action-link">Découvrir <b aria-hidden="true">→</b></span>
               <div class="action-decoration"></div>
-            </article>
+            </a>
 
-            <article class="action-card reveal">
+            <a class="action-card reveal" href="detail.php?type=action&amp;id=1">
               <span class="card-index">02</span>
               <div class="action-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -271,9 +272,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <p>
                 <?= e($actions[1]['description']) ?>
               </p>
-            </article>
+              <span class="action-link">Découvrir <b aria-hidden="true">→</b></span>
+            </a>
 
-            <article class="action-card reveal">
+            <a class="action-card reveal" href="detail.php?type=action&amp;id=2">
               <span class="card-index">03</span>
               <div class="action-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -285,9 +287,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <p>
                 <?= e($actions[2]['description']) ?>
               </p>
-            </article>
+              <span class="action-link">Découvrir <b aria-hidden="true">→</b></span>
+            </a>
 
-            <article class="action-card reveal">
+            <a class="action-card reveal" href="detail.php?type=action&amp;id=3">
               <span class="card-index">04</span>
               <div class="action-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -299,7 +302,8 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <p>
                 <?= e($actions[3]['description']) ?>
               </p>
-            </article>
+              <span class="action-link">Découvrir <b aria-hidden="true">→</b></span>
+            </a>
           </div>
         </div>
       </section>
@@ -340,9 +344,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
           <div class="news-grid">
             <a
               class="news-card news-card-large reveal"
-              href="<?= e($news[0]['url']) ?>"
-              target="_blank"
-              rel="noreferrer"
+              href="detail.php?type=news&amp;id=0"
             >
               <div class="news-image">
                 <img
@@ -354,16 +356,14 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
               <div class="news-body">
                 <time datetime="<?= e($news[0]['date']) ?>"><?= e($news[0]['date_label']) ?></time>
                 <h3><?= e($news[0]['title']) ?></h3>
-                <span class="read-more">Lire sur Facebook <b aria-hidden="true">↗</b></span>
+                <span class="read-more">Découvrir <b aria-hidden="true">→</b></span>
               </div>
             </a>
 
             <div class="news-side">
               <a
                 class="news-card news-card-horizontal reveal"
-                href="<?= e($news[1]['url']) ?>"
-                target="_blank"
-                rel="noreferrer"
+                href="detail.php?type=news&amp;id=1"
               >
                 <div class="news-thumb">
                   <img
@@ -374,15 +374,13 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <div class="news-body">
                   <time datetime="<?= e($news[1]['date']) ?>"><?= e($news[1]['date_label']) ?></time>
                   <h3><?= e($news[1]['title']) ?></h3>
-                  <span class="read-more">Découvrir <b aria-hidden="true">↗</b></span>
+                  <span class="read-more">Découvrir <b aria-hidden="true">→</b></span>
                 </div>
               </a>
 
               <a
                 class="news-card news-card-horizontal reveal"
-                href="<?= e($news[2]['url']) ?>"
-                target="_blank"
-                rel="noreferrer"
+                href="detail.php?type=news&amp;id=2"
               >
                 <div class="news-thumb">
                   <img
@@ -393,7 +391,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
                 <div class="news-body">
                   <time datetime="<?= e($news[2]['date']) ?>"><?= e($news[2]['date_label']) ?></time>
                   <h3><?= e($news[2]['title']) ?></h3>
-                  <span class="read-more">Découvrir <b aria-hidden="true">↗</b></span>
+                  <span class="read-more">Découvrir <b aria-hidden="true">→</b></span>
                 </div>
               </a>
             </div>

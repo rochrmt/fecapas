@@ -154,6 +154,53 @@ function process_image_upload(string $fieldName, string $currentPath): string
         return $currentPath;
     }
 
+    return save_uploaded_image($file);
+}
+
+function process_gallery_uploads(string $fieldName, mixed $currentGallery, mixed $removedIndexes): array
+{
+    $gallery = gallery_paths($currentGallery);
+    $indexesToRemove = is_array($removedIndexes)
+        ? array_map('intval', $removedIndexes)
+        : [];
+
+    $gallery = array_values(array_filter(
+        $gallery,
+        static fn (string $path, int $index): bool => !in_array($index, $indexesToRemove, true),
+        ARRAY_FILTER_USE_BOTH,
+    ));
+
+    $uploads = $_FILES[$fieldName] ?? null;
+
+    if (!is_array($uploads) || !is_array($uploads['name'] ?? null)) {
+        return $gallery;
+    }
+
+    foreach ($uploads['name'] as $index => $name) {
+        $error = $uploads['error'][$index] ?? UPLOAD_ERR_NO_FILE;
+
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+
+        if (count($gallery) >= 12) {
+            throw new InvalidArgumentException('Une galerie peut contenir au maximum 12 images.');
+        }
+
+        $gallery[] = save_uploaded_image([
+            'name' => $name,
+            'type' => $uploads['type'][$index] ?? '',
+            'tmp_name' => $uploads['tmp_name'][$index] ?? '',
+            'error' => $error,
+            'size' => $uploads['size'][$index] ?? 0,
+        ]);
+    }
+
+    return $gallery;
+}
+
+function save_uploaded_image(array $file): string
+{
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         throw new RuntimeException('Le téléversement de l’image a échoué.');
     }

@@ -20,6 +20,9 @@ Le site est disponible sur `http://localhost:4173` et l’administration sur
 À la première ouverture de l’administration, créez le mot de passe administrateur.
 Aucun identifiant ou mot de passe par défaut n’est inclus dans le dépôt.
 
+L’administration permet de modifier la page d’accueil, les pages détaillées de la
+mission, des actions et des actualités, leurs images de couverture et leurs galeries.
+
 ## Stockage
 
 - le contenu modifié est enregistré dans `data/content.json`
